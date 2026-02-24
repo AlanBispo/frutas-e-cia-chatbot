@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import declarative_base
 import os
 from dotenv import load_dotenv
+from sqlalchemy.pool import NullPool
 
 load_dotenv()
 
@@ -9,7 +10,7 @@ load_dotenv()
 # Exemplo: mysql+aiomysql://root:senha@localhost:3306/frutas_db
 DATABASE_URL = os.getenv("DATABASE_URL", "mysql+aiomysql://user:password@localhost:3306/frutas_db")
 
-engine = create_async_engine(DATABASE_URL, echo=False)
+engine = create_async_engine(DATABASE_URL, echo=False, poolclass=NullPool)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=engine, 
