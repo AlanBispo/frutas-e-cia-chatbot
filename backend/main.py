@@ -7,7 +7,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Registrando os roteadores
 app.include_router(chat_router)
 
 @app.get("/health", tags=["Health"])
