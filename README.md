@@ -45,8 +45,13 @@ Execute o comando abaixo para construir e iniciar todos os serviços (Frontend, 
 ``` 
   docker-compose up -d --build
 ```
+### 4. Rodando as migrates
 
-4. Povoando o Banco de Dados (Seed)
+``` 
+  docker exec -it frutas_api alembic upgrade head
+```
+
+### 5. Povoando o Banco de Dados (Seed)
 Com os containers rodando, você precisa inserir os dados iniciais (produtos e informações da loja) para o Chatbot funcionar corretamente. Fiz um arquivo para popular os dados inicialmente, para facilitar o uso, execute o comando:
 
 ``` 
