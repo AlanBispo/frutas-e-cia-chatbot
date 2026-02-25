@@ -51,3 +51,36 @@ async def test_chat_guardrail_out_of_context():
     # O bot deve usar a mensagem educada do Guardrail em vez de explicar Java
     assert "frutas e cia" in reply
     assert "java" not in reply
+
+async def test_admin_create_product():
+    """Valida se o painel administrativo consegue cadastrar um novo produto."""
+    novo_produto = {
+        "nome": "Abacate Hass",
+        "preco": 12.50,
+        "quantidade_estoque": 45
+    }
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post("/admin/produtos/", json=novo_produto)
+    
+    assert response.status_code == 201
+    data = response.json()
+    assert data["nome"] == "Abacate Hass"
+    assert data["preco"] == 12.50
+    assert "id" in data # Garante que o banco gerou um ID
+
+async def test_chat_offer_priority_logic():
+    """
+    Garante que o bot prioriza o preço de oferta em vez do preço original.
+    Baseado no seed da Melancia (De 22.00 por 20.00).
+    """
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        response = await ac.post("/chat/", json={"message": "A melancia está em promoção? Qual o valor?"})
+    
+    assert response.status_code == 200
+    reply = response.json()["reply"].lower()
+    
+    # O bot DEVE informar o preço de 20 e não o de 22
+    assert "20" in reply
+    assert "promoção" in reply or "oferta" in reply
+    # Teste de segurança: ele não deve dizer que custa 22 como sendo o preço atual
+    assert "22" not in reply or "de r$ 22" in reply # Aceita se disser "De 22 por 20"
