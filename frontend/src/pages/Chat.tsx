@@ -37,7 +37,7 @@ export const Chat: React.FC<ChatProps> = ({ onBackToHome, chat }) => {
         <div className="flex items-center gap-3">
           <button 
             onClick={onBackToHome} 
-            className="p-2 hover:bg-green-800 rounded-full transition-colors"
+            className="p-2 hover:bg-green-800 rounded-full transition-colors cursor-pointer"
             title="Voltar para a Home"
           >
             <ArrowLeft size={24} />
