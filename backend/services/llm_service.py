@@ -1,6 +1,7 @@
 import os
+import logging
 from google import genai
-from google.genai import types
+from google.genai import types, errors
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -10,10 +11,11 @@ client = genai.Client()
 SYSTEM_PROMPT = """Você é o assistente virtual da 'Frutas e Cia'.
 Sua função é usar o contexto do banco de dados para responder sobre produtos e a loja.
 
-Regras:
-1. Use os dados de estoque fornecidos para responder quantidades e preços.
-2. Se a informação não estiver no contexto, diga que não sabe.
-3. Se perguntarem algo fora de frutas/loja, use o Guardrail: 'Olá! Sou o assistente da Frutas e Cia. Só posso ajudar com informações sobre nossos produtos e estoque. Como posso ajudar com suas compras hoje?'
+Regras Estritas:
+1. Use os dados de estoque fornecidos para responder se há produtos e seus respectivos preços.
+2. Não forneça dados de quantidade de estoque para os clientes.
+3. Se a informação não estiver no contexto, diga que não sabe.
+4. Se perguntarem algo fora de frutas/loja, use o Guardrail: 'Olá! Sou o assistente da Frutas e Cia. Só posso ajudar com informações sobre nossos produtos e estoque. Como posso ajudar com suas compras hoje?'
 """
 
 async def generate_chat_response(user_message: str, context_data: str) -> str:
@@ -22,12 +24,28 @@ async def generate_chat_response(user_message: str, context_data: str) -> str:
         f"PERGUNTA DO USUÁRIO: {user_message}"
     )
     
-    response = await client.aio.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
+    try:
+        response = await client.aio.models.generate_content(
+            model='gemini-flash-latest',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_PROMPT,
+            )
         )
-    )
+        return response.text
+
+    except errors.ClientError as e:
+        if "429" in str(e):
+            logging.warning("Limite de cota atingido. Enviando resposta Mock.")
+            return (
+                "[AVISO: MODO DE CONTINGÊNCIA] Olá! No momento nosso sistema de IA está "
+                "em manutenção rápida (limite de cota), mas nosso estoque de frutas "
+                "continua disponível! Tente perguntar novamente em instantes."
+            )
+        
+        logging.error(f"Erro na API Gemini: {e}")
+        return "Desculpe, tive um problema ao processar sua resposta."
     
-    return response.text
+    except Exception as e:
+        logging.error(f"Erro inesperado: {e}")
+        return "Ops, ocorreu um erro interno."
