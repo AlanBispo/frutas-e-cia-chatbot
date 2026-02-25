@@ -1,15 +1,18 @@
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from models.produto import Produto
-from models.oferta import Oferta
+from repositories.oferta_repository import OfertaRepository
+
+logger = logging.getLogger(__name__)
 
 class OfertaService:
     @staticmethod
     async def get_today_offers_formatted(db: AsyncSession):
+        """
+        Orquestra a busca de ofertas e formata a resposta para o frontend/LLM.
+        """
         try:
-            query = select(Oferta, Produto).join(Produto, Oferta.produto_id == Produto.id)
-            result = await db.execute(query)
-            ofertas_data = result.all()
+            # Busca os dados
+            ofertas_data = await OfertaRepository.get_active_offers_with_products(db)
 
             if not ofertas_data:
                 return {
@@ -21,7 +24,9 @@ class OfertaService:
             items = []
 
             for oferta, produto in ofertas_data:
-                texto_parts.append(f"- {produto.nome}: De R$ {produto.preco:.2f} por APENAS R$ {oferta.preco_oferta:.2f}!")
+                texto_parts.append(
+                    f"- {produto.nome}: De R$ {produto.preco:.2f} por APENAS R$ {oferta.preco_oferta:.2f}!"
+                )
                 items.append({
                     "nome": produto.nome,
                     "preco_oferta": oferta.preco_oferta
@@ -33,5 +38,8 @@ class OfertaService:
                 "texto": "\n".join(texto_parts),
                 "items": items
             }
+
         except Exception as e:
+            await db.rollback()
+            logger.error(f"Erro ao buscar ofertas no OfertaService: {str(e)}", exc_info=True)
             raise e
