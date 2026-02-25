@@ -18,18 +18,36 @@ Regras Estritas:
 4. Se perguntarem algo fora de frutas/loja, use o Guardrail: 'Olá! Sou o assistente da Frutas e Cia. Só posso ajudar com informações sobre nossos produtos e estoque. Como posso ajudar com suas compras hoje?'
 """
 
-async def generate_chat_response(user_message: str, context_data: str) -> str:
-    prompt = (
-        f"CONTEXTO DO BANCO DE DADOS:\n{context_data}\n\n"
-        f"PERGUNTA DO USUÁRIO: {user_message}"
+async def generate_chat_response(user_message: str, context_data: str, history: list = []) -> str:
+
+    # Instrução de sistema
+    dynamic_system_instruction = f"{SYSTEM_PROMPT}\n\nCONTEXTO DO BANCO DE DADOS ATUALIZADO:\n{context_data}"
+
+    contents = []
+    # Converte o histórico vindo do banco em objetos Content oficiais
+    for msg in history:
+        contents.append(
+            types.Content(
+                role=msg["role"],
+                parts=[types.Part.from_text(text=msg["parts"][0])]
+            )
+        )
+
+    # pergunta atual do usuário
+    contents.append(
+        types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=user_message)]
+        )
     )
     
     try:
         response = await client.aio.models.generate_content(
             model='gemini-flash-latest',
-            contents=prompt,
+            contents=contents,
             config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
+                system_instruction=dynamic_system_instruction,
+                temperature=0.2,
             )
         )
         return response.text

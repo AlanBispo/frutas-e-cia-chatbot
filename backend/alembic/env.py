@@ -10,14 +10,15 @@ import sys
 from dotenv import load_dotenv
 from alembic import context
 
-# 1. Carrega variáveis de ambiente e garante que o Alembic ache a pasta do projeto
+# Carrega variáveis de ambiente e garante que o Alembic ache a pasta do projeto
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 load_dotenv()
 
-# 2. Importa a Base e os Models (Crucial para o Alembic detectar as tabelas)
+# Importa a Base e os Models (Crucial para o Alembic detectar as tabelas)
 from database.config import Base
 import models.produto
 import models.informacao
+import models.chat
 
 config = context.config
 

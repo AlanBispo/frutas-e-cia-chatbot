@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from database.config import get_db
 from models.produto import Produto
 from models.informacao import InformacaoLoja
+from models.chat import ChatMessage
 from services.llm_service import generate_chat_response
 
 router = APIRouter(prefix="/chat", tags=["Chatbot"])
@@ -14,25 +15,35 @@ class ChatRequest(BaseModel):
 
 @router.post("/")
 async def chat_endpoint(request: ChatRequest, db: AsyncSession = Depends(get_db)):
-    # 1. Busca todos os produtos do estoque
+    # Busca Contexto de Negócio
     result_produtos = await db.execute(select(Produto))
     produtos = result_produtos.scalars().all()
-    
-    # 2. Busca informações institucionais da loja
     result_infos = await db.execute(select(InformacaoLoja))
     infos = result_infos.scalars().all()
     
-    # 3. Formata o contexto para o LLM
-    contexto_estoque = "\n".join([
-        f"- {p.nome} ({p.categoria}): R$ {p.preco:.2f}. Estoque: {p.quantidade_estoque}. Descrição: {p.descricao}" 
-        for p in produtos
-    ])
+    # Busca Contexto de Conversa (MEMÓRIA)
+    result_history = await db.execute(
+        select(ChatMessage).order_by(ChatMessage.created_at.asc()).limit(10)
+    )
+    history_db = result_history.scalars().all()
     
+    history_for_llm = [
+        {"role": m.role, "parts": [m.content]} 
+        for m in history_db
+    ]
+
+    contexto_estoque = "\n".join([f"- {p.nome}: R$ {p.preco:.2f}" for p in produtos])
     contexto_loja = "\n".join([f"- {i.chave}: {i.valor}" for i in infos])
     
-    full_context = f"ESTOQUE ATUAL:\n{contexto_estoque}\n\nINFORMAÇÕES DA LOJA:\n{contexto_loja}"
+    system_instruction = f"Você é o atendente da Frutas e Cia.\nESTOQUE:\n{contexto_estoque}\nLOJA:\n{contexto_loja}"
+
+    # Gera resposta
+    reply = await generate_chat_response(request.message, system_instruction, history_for_llm)
     
-    # 4. Gera resposta com a IA
-    reply = await generate_chat_response(request.message, full_context)
+    # Salva a interação atual no MySQL para a próxima pergunta
+    user_msg = ChatMessage(role="user", content=request.message)
+    bot_msg = ChatMessage(role="model", content=reply)
+    db.add_all([user_msg, bot_msg])
+    await db.commit()
     
     return {"reply": reply}
