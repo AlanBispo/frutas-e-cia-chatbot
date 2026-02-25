@@ -7,6 +7,7 @@ from models.produto import Produto
 from models.informacao import InformacaoLoja
 from models.chat import ChatMessage
 from services.llm_service import generate_chat_response
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/chat", tags=["Chatbot"])
 
@@ -47,3 +48,13 @@ async def chat_endpoint(request: ChatRequest, db: AsyncSession = Depends(get_db)
     await db.commit()
     
     return {"reply": reply}
+
+@router.delete("/chat/reset")
+async def reset_chat(db: Session = Depends(get_db)):
+    try:
+        db.query(ChatMessage).delete()
+        db.commit()
+        return {"message": "Histórico da Frutas e Cia limpo com sucesso!"}
+    except Exception as e:
+        db.rollback()
+        return {"error": str(e)}
