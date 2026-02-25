@@ -19,6 +19,7 @@ from database.config import Base
 import models.produto
 import models.informacao
 import models.chat
+import models.oferta
 
 config = context.config
 
