@@ -1,22 +1,20 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { adminService, type Produto, type ProdutoInput, type Oferta } from '../services/adminService';
+import toast, { Toaster } from 'react-hot-toast'; 
 import { 
   Plus, Search, Edit2, Trash2, Package, 
   BarChart3, X, Save, Loader2, Flame 
 } from 'lucide-react';
 
 const AdminPanel: React.FC = () => {
-  // Estados principais
   const [produtos, setProdutos] = useState<Produto[]>([]);
   const [ofertas, setOfertas] = useState<Oferta[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Estados de UI
   const [filter, setFilter] = useState('');
   const [form, setForm] = useState<ProdutoInput>({ nome: '', preco: 0, quantidade_estoque: 0 });
   const [editId, setEditId] = useState<number | null>(null);
 
-  // Carregar dados iniciais (Produtos e Ofertas em paralelo)
   const carregarDados = async () => {
     try {
       const [resProd, resOfer] = await Promise.all([
@@ -26,7 +24,7 @@ const AdminPanel: React.FC = () => {
       setProdutos(resProd.data);
       setOfertas(resOfer.data);
     } catch (error) {
-      console.error("Erro ao sincronizar dados com o servidor");
+      toast.error("Erro ao sincronizar dados com o servidor");
     } finally {
       setLoading(false);
     }
@@ -34,47 +32,57 @@ const AdminPanel: React.FC = () => {
 
   useEffect(() => { carregarDados(); }, []);
 
-  // Filtro de busca em tempo real
   const produtosFiltrados = useMemo(() => {
     return produtos.filter(p => p.nome.toLowerCase().includes(filter.toLowerCase()));
   }, [produtos, filter]);
 
-  // Estatística rápida de unidades totais
   const totalUnidades = produtos.reduce((acc, p) => acc + p.quantidade_estoque, 0);
 
-  // Lógica de Salvar Produto (Create/Update)
+  // Lógica de Salvar
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (editId) {
         await adminService.editarProduto(editId, form);
+        toast.success(`${form.nome} atualizado com sucesso!`);
       } else {
         await adminService.criarProduto(form);
+        toast.success(`${form.nome} cadastrado no estoque!`);
       }
       setForm({ nome: '', preco: 0, quantidade_estoque: 0 });
       setEditId(null);
       carregarDados();
     } catch (error) {
-      alert("Erro ao processar operação no banco de dados.");
+      toast.error("Erro ao processar operação.");
     }
   };
 
-  // Lógica de Excluir Produto
+  // Lógica de Excluir
   const handleExcluir = async (id: number) => {
     if (confirm("Deseja remover este item permanentemente?")) {
-      await adminService.excluirProduto(id);
-      carregarDados();
+      try {
+        await adminService.excluirProduto(id);
+        toast.success("Produto removido!");
+        carregarDados();
+      } catch (error) {
+        toast.error("Não foi possível excluir o item.");
+      }
     }
   };
 
-  // Gerenciamento Dinâmico de Ofertas (Toggle)
+  // Ofertas
   const handleToggleOferta = async (produto: Produto) => {
     const ofertaExistente = ofertas.find(o => o.produto_id === produto.id);
 
     if (ofertaExistente) {
       if (confirm(`Remover promoção de ${produto.nome}?`)) {
-        await adminService.excluirOferta(ofertaExistente.id);
-        carregarDados();
+        try {
+          await adminService.excluirOferta(ofertaExistente.id);
+          toast.success("Promoção encerrada.");
+          carregarDados();
+        } catch (error) {
+          toast.error("Erro ao remover oferta.");
+        }
       }
     } else {
       const novoPreco = prompt(`Qual o preço de oferta para ${produto.nome}? (Original: R$ ${produto.preco.toFixed(2)})`);
@@ -82,14 +90,15 @@ const AdminPanel: React.FC = () => {
       if (novoPreco && !isNaN(Number(novoPreco))) {
         const precoNum = Number(novoPreco);
         if (precoNum >= produto.preco) {
-          alert("Atenção: O preço de oferta deve ser menor que o preço original.");
+          toast.error("O preço de oferta deve ser menor que o original!");
           return;
         }
         try {
           await adminService.criarOferta(produto.id, precoNum);
+          toast.success(`Oferta ativa para ${produto.nome}! 🚀`);
           carregarDados();
         } catch (error: any) {
-          alert(error.response?.data?.detail || "Erro ao criar oferta");
+          toast.error(error.response?.data?.detail || "Erro ao criar oferta");
         }
       }
     }
@@ -105,9 +114,10 @@ const AdminPanel: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900">
+      {/* 2. O COMPONENTE TOASTER DEVE ESTAR AQUI */}
+      <Toaster position="top-right" reverseOrder={false} />
+      
       <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* Header com Estatísticas */}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-800">
@@ -126,8 +136,6 @@ const AdminPanel: React.FC = () => {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          {/* Coluna do Formulário (Lado Esquerdo) */}
           <div className="lg:col-span-4">
             <div className="bg-white p-6 rounded-2xl shadow-md border border-slate-200 sticky top-24">
               <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
@@ -191,9 +199,7 @@ const AdminPanel: React.FC = () => {
             </div>
           </div>
 
-          {/* Coluna da Tabela (Lado Direito) */}
           <div className="lg:col-span-8 space-y-4">
-            {/* Campo de Pesquisa */}
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input 
@@ -205,7 +211,6 @@ const AdminPanel: React.FC = () => {
               />
             </div>
 
-            {/* Tabela de Produtos */}
             <div className="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
