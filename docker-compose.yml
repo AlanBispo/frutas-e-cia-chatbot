@@ -5,11 +5,7 @@ services:
     image: mysql:8.0
     container_name: frutas_db
     restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    env_file: .env
     ports:
       - "3306:3306"
     volumes:
@@ -24,26 +20,27 @@ services:
     build: ./backend
     container_name: frutas_api
     restart: always
+    env_file: .env
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       db:
         condition: service_healthy
-  
+
   web:
     build: ./frontend
     container_name: frutas_web
+    restart: always
+    env_file: .env
     ports:
       - "5173:5173"
     volumes:
       - ./frontend:/app
-    environment:
-      - VITE_API_URL=http://localhost:8000
+      - /app/node_modules
+    command: npm run dev -- --host
     depends_on:
       - api
 
