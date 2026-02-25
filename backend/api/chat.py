@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel
@@ -7,7 +7,7 @@ from models.produto import Produto
 from models.informacao import InformacaoLoja
 from models.chat import ChatMessage
 from services.llm_service import generate_chat_response
-from sqlalchemy.orm import Session
+from services.chat_service import ChatService
 
 router = APIRouter(prefix="/chat", tags=["Chatbot"])
 
@@ -49,12 +49,14 @@ async def chat_endpoint(request: ChatRequest, db: AsyncSession = Depends(get_db)
     
     return {"reply": reply}
 
-@router.delete("/chat/reset")
-async def reset_chat(db: Session = Depends(get_db)):
+@router.delete("/clear")
+async def clear_chat(db: AsyncSession = Depends(get_db)):
     try:
-        db.query(ChatMessage).delete()
-        db.commit()
+        await ChatService.clear_all_history(db)
         return {"message": "Histórico da Frutas e Cia limpo com sucesso!"}
-    except Exception as e:
-        db.rollback()
-        return {"error": str(e)}
+        
+    except Exception:
+        raise HTTPException(
+            status_code=500, 
+            detail="Erro interno ao tentar resetar a conversa."
+        )

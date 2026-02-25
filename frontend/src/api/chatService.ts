@@ -22,3 +22,7 @@ export const getDailyOffers = async (): Promise<OffersResponse> => {
   const response = await api.get('/ofertas/hoje');
   return response.data;
 };
+
+export const clearChatHistory = async (): Promise<void> => {
+  await api.delete('/chat/clear');
+};

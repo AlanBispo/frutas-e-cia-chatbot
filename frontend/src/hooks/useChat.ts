@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { sendMessageToBot } from '../api/chatService';
+import { sendMessageToBot, clearChatHistory } from '../api/chatService';
 import type { Message } from '../types/chat';
 
 export function useChat() {
@@ -34,8 +34,16 @@ export function useChat() {
     }
   };
 
-  const resetChat = () => {
-    setMessages(DEFAULT_MESSAGE);
+  const resetChat = async () => {
+    try {
+      await clearChatHistory();
+      
+      setMessages([
+        { text: "Olá! Sou o assistente da Frutas e Cia. Como posso te ajudar?", sender: 'bot' }
+      ]);
+    } catch (error) {
+      console.error("Erro ao resetar chat:", error);
+    }
   };
 
   const startConversationWithContext = async (initialBotMessage: string) => {
