@@ -25,7 +25,7 @@ services:
     container_name: frutas_api
     restart: always
     volumes:
-      - ./backend:/app # Mapeia o volume local para hot-reload
+      - ./backend:/app
     ports:
       - "8000:8000"
     environment:
@@ -34,6 +34,18 @@ services:
     depends_on:
       db:
         condition: service_healthy
+  
+  web:
+    build: ./frontend
+    container_name: frutas_web
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      - api
 
 volumes:
   mysql_data:
