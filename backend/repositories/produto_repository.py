@@ -1,6 +1,7 @@
 from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from models.produto import Produto
+from models.oferta import Oferta
 
 class ProdutoRepository:
     @staticmethod
@@ -31,5 +32,7 @@ class ProdutoRepository:
 
     @staticmethod
     async def delete(db: AsyncSession, produto_id: int):
+        await db.execute(delete(Oferta).where(Oferta.produto_id == produto_id))
+    
         await db.execute(delete(Produto).where(Produto.id == produto_id))
         await db.commit()
