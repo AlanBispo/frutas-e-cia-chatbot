@@ -3,9 +3,11 @@ import { sendMessageToBot } from '../api/chatService';
 import type { Message } from '../types/chat';
 
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>([
+  const DEFAULT_MESSAGE: Message[] = [
     { text: "Olá! Sou o assistente da Frutas e Cia. Como posso te ajudar com nosso estoque hoje?", sender: 'bot' }
-  ]);
+  ];
+
+  const [messages, setMessages] = useState<Message[]>(DEFAULT_MESSAGE);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -32,6 +34,15 @@ export function useChat() {
     }
   };
 
-  // Retorna apenas o necessário para a UI funcionar
-  return { messages, send, isLoading, scrollRef };
+  const resetChat = () => {
+    setMessages(DEFAULT_MESSAGE);
+  };
+
+  const startConversationWithContext = async (initialBotMessage: string) => {
+    setMessages([
+      { text: initialBotMessage, sender: 'bot' }
+    ]);
+  };
+
+  return { messages, send, isLoading, scrollRef, startConversationWithContext, resetChat };
 }
