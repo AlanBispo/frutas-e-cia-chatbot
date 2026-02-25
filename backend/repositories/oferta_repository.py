@@ -24,7 +24,7 @@ class OfertaRepository:
         nova_oferta = Oferta(**dados)
         db.add(nova_oferta)
         await db.commit()
-        
+
         return await OfertaRepository.get_by_id(db, nova_oferta.id)
 
     @staticmethod
@@ -41,3 +41,9 @@ class OfertaRepository:
             .where(Oferta.id == oferta_id)
         )
         return result.scalar_one_or_none()
+    
+    @staticmethod
+    async def get_active_offers(db: AsyncSession):
+        # Busca apenas o que é promoção e está ativo
+        result = await db.execute(select(Oferta).where(Oferta.ativa == True))
+        return result.scalars().all()
