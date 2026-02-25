@@ -4,7 +4,7 @@ from typing import Optional
 class ProdutoBase(BaseModel):
     nome: str
     preco: float
-    quantidade: int
+    quantidade_estoque: int
 
 # Criação
 class ProdutoCreate(ProdutoBase):
@@ -14,7 +14,7 @@ class ProdutoCreate(ProdutoBase):
 class ProdutoUpdate(BaseModel):
     nome: Optional[str] = None
     preco: Optional[float] = None
-    quantidade: Optional[int] = None
+    quantidade_estoque: Optional[int] = None
 
 # Resposta 
 class ProdutoResponse(ProdutoBase):
