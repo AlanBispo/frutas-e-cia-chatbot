@@ -4,12 +4,20 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
 });
 
-// Interfaces para o TypeScript (devem bater com seus Schemas do Pydantic)
 export interface Produto {
   id: number;
   nome: string;
   preco: number;
   quantidade_estoque: number;
+}
+
+export interface Oferta {
+  id: number;
+  preco_oferta: number;
+  produto: {
+    nome: string;
+    preco: number;
+  }
 }
 
 export type ProdutoInput = Omit<Produto, 'id'>;
@@ -27,4 +35,9 @@ export const adminService = {
   
   // Deletar
   excluirProduto: (id: number) => api.delete(`/admin/produtos/${id}`),
+
+  listarOfertas: () => api.get<Oferta[]>('/admin/ofertas/'),
+  criarOferta: (produto_id: number, preco_oferta: number) => 
+    api.post('/admin/ofertas/', { produto_id, preco_oferta }),
+  excluirOferta: (id: number) => api.delete(`/admin/ofertas/${id}`),
 };
