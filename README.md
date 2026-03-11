@@ -1,6 +1,6 @@
 ## 🍎 Frutas & Cia - Hortifruti Inteligente
 
-O Frutas & Cia é uma aplicação Full Stack desenvolvida para o desafio técnico da PixaFlow.
+O Frutas & Cia é uma aplicação Full Stack desenvolvida a fins de estudo.
 
 O sistema oferece um chatbot inteligente que utiliza RAG (Retrieval-Augmented Generation) para responder clientes com base nos dados reais do banco de dados. Além de permitir administrar produtos e ofertas em tempo real.
 
